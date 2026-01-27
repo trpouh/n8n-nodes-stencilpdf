@@ -1,6 +1,6 @@
 {
     "name": "n8n-nodes-stencilpdf",
-    "version": "0.1.0",
+    "version": "0.1.1",
     "description": "Node to interact with stencils rest API",
     "license": "MIT",
     "homepage": "stencilpdf.com",
