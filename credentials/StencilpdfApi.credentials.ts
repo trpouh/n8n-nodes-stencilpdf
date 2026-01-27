@@ -12,7 +12,7 @@ export class StencilpdfApi implements ICredentialType {
 	displayName = 'Stencilpdf API';
 
 	// Link to your community node's README
-	documentationUrl = 'https://github.com/org/-stencilpdf?tab=readme-ov-file#credentials';
+	documentationUrl = 'https://github.com/trpouh/n8n-nodes-stencilpdf?tab=readme-ov-file#credentials';
 
 	properties: INodeProperties[] = [
 		{
