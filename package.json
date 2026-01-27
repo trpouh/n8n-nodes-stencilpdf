@@ -34,7 +34,7 @@
             "dist/credentials/StencilpdfApi.credentials.js"
         ],
         "nodes": [
-            "dist/nodes/stencilpdf/stencilpdf.node.js"
+            "dist/nodes/stencilpdf/Stencilpdf.node.js"
         ]
     },
     "devDependencies": {
