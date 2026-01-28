@@ -7,7 +7,7 @@ import type {
 	INodeTypeDescription,
 	ResourceMapperFields,
 } from 'n8n-workflow';
-import { NodeConnectionTypes, NodeApiError } from 'n8n-workflow';
+import { NodeApiError, NodeConnectionTypes } from 'n8n-workflow';
 import { reportDescription } from './resources/report';
 
 export class Stencilpdf implements INodeType {
@@ -52,11 +52,15 @@ export class Stencilpdf implements INodeType {
 	methods = {
 		loadOptions: {
 			async getReports(this: ILoadOptionsFunctions): Promise<INodePropertyOptions[]> {
-				const response = await this.helpers.httpRequestWithAuthentication.call(this, 'stencilpdfApi', {
-					method: 'GET',
-					url: 'https://app.stencilpdf.com/api/reports',
-					json: true,
-				});
+				const response = await this.helpers.httpRequestWithAuthentication.call(
+					this,
+					'stencilpdfApi',
+					{
+						method: 'GET',
+						url: 'https://app.stencilpdf.com/api/reports',
+						json: true,
+					},
+				);
 
 				return response.reports.map(
 					(report: { name: string; organizationName: string; id: string }) => ({
@@ -75,11 +79,15 @@ export class Stencilpdf implements INodeType {
 					return { fields: [] };
 				}
 
-				const response = await this.helpers.httpRequestWithAuthentication.call(this, 'stencilpdfApi', {
-					method: 'GET',
-					url: `https://app.stencilpdf.com/api/reports/${reportId}/variables`,
-					json: true,
-				});
+				const response = await this.helpers.httpRequestWithAuthentication.call(
+					this,
+					'stencilpdfApi',
+					{
+						method: 'GET',
+						url: `https://app.stencilpdf.com/api/reports/${reportId}/variables`,
+						json: true,
+					},
+				);
 
 				const { variables } = response as {
 					variables: Array<{ name: string; defaultValue?: string; isArray?: boolean }>;
@@ -153,16 +161,15 @@ export class Stencilpdf implements INodeType {
 							{
 								method: 'POST',
 								url: `https://app.stencilpdf.com/api/reports/${reportId}/generate-pdf`,
-								body: JSON.stringify({ variables }),
-								headers: {
-									'Content-Type': 'application/json',
-								},
-								encoding: 'document',
+								body: { variables },
+								json: true,
+								encoding: 'arraybuffer',
+								returnFullResponse: false,
 							},
 						);
 
 						const binaryData = await this.helpers.prepareBinaryData(
-							Buffer.from(response as Buffer),
+							Buffer.from(response as ArrayBuffer),
 							`${reportId}.pdf`,
 							'application/pdf',
 						);
