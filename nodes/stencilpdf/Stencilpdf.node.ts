@@ -14,7 +14,7 @@ export class Stencilpdf implements INodeType {
 	description: INodeTypeDescription = {
 		displayName: 'StencilPDF',
 		name: 'stencilpdf',
-		subtitle: 'stencilpdf',
+		subtitle: '={{$parameter["operation"]}}',
 		icon: { light: 'file:logo.svg', dark: 'file:logo.dark.svg' },
 		group: ['input'],
 		version: 1,
@@ -132,10 +132,10 @@ export class Stencilpdf implements INodeType {
 						const reports = response.reports || response;
 						if (Array.isArray(reports)) {
 							for (const report of reports) {
-								returnData.push({ json: report, pairedItem: i });
+								returnData.push({ json: report, pairedItem: { item: i } });
 							}
 						} else {
-							returnData.push({ json: response, pairedItem: i });
+							returnData.push({ json: response, pairedItem: { item: i } });
 						}
 					}
 
@@ -177,7 +177,7 @@ export class Stencilpdf implements INodeType {
 						returnData.push({
 							json: {},
 							binary: { data: binaryData },
-							pairedItem: i,
+							pairedItem: { item: i },
 						});
 					}
 				}

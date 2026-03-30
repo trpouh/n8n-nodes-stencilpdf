@@ -3,7 +3,7 @@
     "version": "0.1.4",
     "description": "Node to interact with stencils rest API",
     "license": "MIT",
-    "homepage": "stencilpdf.com",
+    "homepage": "https://stencilpdf.com",
     "keywords": [
         "n8n-community-node-package"
     ],
