@@ -7,14 +7,14 @@ import type {
 	INodeTypeDescription,
 	ResourceMapperFields,
 } from 'n8n-workflow';
-import { NodeConnectionTypes, NodeApiError } from 'n8n-workflow';
+import { NodeConnectionTypes, NodeOperationError } from 'n8n-workflow';
 import { reportDescription } from './resources/report';
 
 export class Stencilpdf implements INodeType {
 	description: INodeTypeDescription = {
 		displayName: 'StencilPDF',
 		name: 'stencilpdf',
-		subtitle: 'stencilpdf',
+		subtitle: '={{$parameter["operation"]}}',
 		icon: { light: 'file:logo.svg', dark: 'file:logo.dark.svg' },
 		group: ['input'],
 		version: 1,
@@ -52,11 +52,15 @@ export class Stencilpdf implements INodeType {
 	methods = {
 		loadOptions: {
 			async getReports(this: ILoadOptionsFunctions): Promise<INodePropertyOptions[]> {
-				const response = await this.helpers.httpRequestWithAuthentication.call(this, 'stencilpdfApi', {
-					method: 'GET',
-					url: 'https://app.stencilpdf.com/api/reports',
-					json: true,
-				});
+				const response = await this.helpers.httpRequestWithAuthentication.call(
+					this,
+					'stencilpdfApi',
+					{
+						method: 'GET',
+						url: 'https://app.stencilpdf.com/api/reports',
+						json: true,
+					},
+				);
 
 				return response.reports.map(
 					(report: { name: string; organizationName: string; id: string }) => ({
@@ -75,11 +79,15 @@ export class Stencilpdf implements INodeType {
 					return { fields: [] };
 				}
 
-				const response = await this.helpers.httpRequestWithAuthentication.call(this, 'stencilpdfApi', {
-					method: 'GET',
-					url: `https://app.stencilpdf.com/api/reports/${reportId}/variables`,
-					json: true,
-				});
+				const response = await this.helpers.httpRequestWithAuthentication.call(
+					this,
+					'stencilpdfApi',
+					{
+						method: 'GET',
+						url: `https://app.stencilpdf.com/api/reports/${reportId}/variables`,
+						json: true,
+					},
+				);
 
 				const { variables } = response as {
 					variables: Array<{ name: string; defaultValue?: string; isArray?: boolean }>;
@@ -106,63 +114,62 @@ export class Stencilpdf implements INodeType {
 		const returnData: INodeExecutionData[] = [];
 
 		for (let i = 0; i < items.length; i++) {
-			const resource = this.getNodeParameter('resource', i) as string;
-			const operation = this.getNodeParameter('operation', i) as string;
+			try {
+				const resource = this.getNodeParameter('resource', i) as string;
+				const operation = this.getNodeParameter('operation', i) as string;
 
-			if (resource === 'report') {
-				if (operation === 'getMany') {
-					const response = await this.helpers.httpRequestWithAuthentication.call(
-						this,
-						'stencilpdfApi',
-						{
-							method: 'GET',
-							url: 'https://app.stencilpdf.com/api/reports',
-							json: true,
-						},
-					);
-					const reports = response.reports || response;
-					if (Array.isArray(reports)) {
-						for (const report of reports) {
-							returnData.push({ json: report, pairedItem: i });
+				if (resource === 'report') {
+					if (operation === 'getMany') {
+						const response = await this.helpers.httpRequestWithAuthentication.call(
+							this,
+							'stencilpdfApi',
+							{
+								method: 'GET',
+								url: 'https://app.stencilpdf.com/api/reports',
+								json: true,
+							},
+						);
+						const reports = response.reports || response;
+						if (Array.isArray(reports)) {
+							for (const report of reports) {
+								returnData.push({ json: report, pairedItem: { item: i } });
+							}
+						} else {
+							returnData.push({ json: response, pairedItem: { item: i } });
 						}
-					} else {
-						returnData.push({ json: response, pairedItem: i });
-					}
-				}
-
-				if (operation === 'renderPDF') {
-					const reportId = this.getNodeParameter('reportID', i) as string;
-					const variablesInput = this.getNodeParameter('variablesInput', i) as string;
-
-					let variables: Record<string, unknown> = {};
-
-					if (variablesInput === 'json') {
-						const variablesJson = this.getNodeParameter('variablesJson', i) as string;
-						variables = JSON.parse(variablesJson);
-					} else {
-						const resourceMapperData = this.getNodeParameter('variables', i) as {
-							value: Record<string, unknown>;
-						};
-						variables = resourceMapperData?.value || {};
 					}
 
-					try {
+					if (operation === 'renderPDF') {
+						const reportId = this.getNodeParameter('reportID', i) as string;
+						const variablesInput = this.getNodeParameter('variablesInput', i) as string;
+
+						let variables: Record<string, unknown> = {};
+
+						if (variablesInput === 'json') {
+							const variablesJson = this.getNodeParameter('variablesJson', i) as string;
+							variables = JSON.parse(variablesJson);
+						} else {
+							const resourceMapperData = this.getNodeParameter('variables', i) as {
+								value: Record<string, unknown>;
+							};
+							variables = resourceMapperData?.value || {};
+						}
+
 						const response = await this.helpers.httpRequestWithAuthentication.call(
 							this,
 							'stencilpdfApi',
 							{
 								method: 'POST',
 								url: `https://app.stencilpdf.com/api/reports/${reportId}/generate-pdf`,
-								body: JSON.stringify({ variables }),
-								headers: {
-									'Content-Type': 'application/json',
-								},
-								encoding: 'document',
+								body: { variables },
+								json: true,
+								encoding: 'arraybuffer',
+								returnFullResponse: false,
 							},
 						);
 
 						const binaryData = await this.helpers.prepareBinaryData(
-							Buffer.from(response as Buffer),
+							Buffer.from(response as ArrayBuffer),
 							`${reportId}.pdf`,
 							'application/pdf',
 						);
@@ -170,12 +177,22 @@ export class Stencilpdf implements INodeType {
 						returnData.push({
 							json: {},
 							binary: { data: binaryData },
-							pairedItem: i,
+							pairedItem: { item: i },
 						});
-					} catch (error) {
-						throw new NodeApiError(this.getNode(), error);
 					}
 				}
+			} catch (error) {
+				if (this.continueOnFail()) {
+					returnData.push({
+						json: { error: (error as Error).message },
+						pairedItem: { item: i },
+					});
+					continue;
+				}
+
+				throw new NodeOperationError(this.getNode(), error as Error, {
+					itemIndex: i,
+				});
 			}
 		}
 

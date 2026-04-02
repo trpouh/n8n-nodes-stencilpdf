@@ -28,13 +28,13 @@ Follow the [installation guide](https://docs.n8n.io/integrations/community-nodes
 To use this node, you need a StencilPDF API key.
 
 1. Sign up for an account at [stencilpdf.com](https://stencilpdf.com)
-2. Navigate to your account settings to generate an API key
+2. Navigate to your account settings to generate an API key. It will start with `rbk_`
 3. In n8n, create new credentials of type "StencilPDF API"
 4. Enter your API key
 
 ## Compatibility
 
-Tested with n8n version 1.x.
+Tested with n8n version 2.4.6
 
 ## Resources
 
